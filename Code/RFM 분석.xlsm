@@ -1,0 +1,213 @@
+Sub RFM()
+ Dim lngR As Long
+ Dim i As Long
+ 
+ '행데이터 index 찾기
+ lngR = Worksheets("전처리").Range("A1000000").End(xlUp).Row
+ 
+ '전처리 sheet의 값들을 RFM sheet로 복사
+ Worksheets("전처리").Range("A1:F" & lngR).copy Worksheets("RFM").Range("A1")
+ 
+ 'UnitPrice -> 실제 소비 가격 계산 (Quantity * UnitPrice)
+ Worksheets("RFM").Range("G1") = "TotalPrice"
+ For i = 2 To lngR
+    Worksheets("RFM").Cells(i, 7) = Worksheets("RFM").Cells(i, 4) * Worksheets("RFM").Cells(i, 2)
+ Next i
+ 
+ 'ID, 날짜, 금액 생성
+ Worksheets("RFM").Range("I1") = "ID"
+ Worksheets("RFM").Range("E2:E" & lngR).copy Worksheets("RFM").Range("I2")
+ Worksheets("RFM").Range("J1") = "Date"
+ For i = 2 To lngR
+       Worksheets("RFM").Cells(i, 10) = Worksheets("RFM").Application.text(Cells(i, 3), "yyyy-mm-dd")
+ Next i
+ Worksheets("RFM").Range("K1") = "Price"
+ Worksheets("RFM").Range("G2:G" & lngR).copy Worksheets("RFM").Range("K2")
+ 
+ 'RFM 분석을 위한 헤더 쓰기
+ Worksheets("RFM").Range("L1") = "구매건수"
+ Worksheets("RFM").Range("M1") = "구매평균금액"
+ Worksheets("RFM").Range("N1") = "구매경과일수"
+ 
+End Sub
+
+Sub RFM2()
+ Dim rngAll As Range
+ Dim lngR As Long
+ 
+ '행데이터 index 찾기
+ lngR = Worksheets("RFM").Range("A1000000").End(xlUp).Row
+ 
+ '모든 데이터를 최신 날짜순으로 정렬
+ Worksheets("RFM").Range("A1:K" & lngR).Sort key1:=Range("J1"), order1:=xlDescending, Header:=xlYes
+ 
+ 'ID 기준으로 중복제거
+ Set rngAll = Worksheets("RFM").Range("I1:K" & lngR)
+     rngAll.RemoveDuplicates Columns:=1, Header:=xlYes
+     
+End Sub
+
+Sub RFM3()
+ Dim rngC As Range
+ Dim rngTarget As Range
+ Dim rngI As Range
+ Dim rngP As Range
+ Dim lngR As Long
+ Dim mem As Long
+ Dim cnt, ave As Long
+ 
+ '총 데이터 개수 구하기
+ lngR = Worksheets("RFM").Range("A1000000").End(xlUp).Row
+ '총 고객 명수 구하기
+ mem = Worksheets("RFM").Range("I1000000").End(xlUp).Row
+
+ '평균 금액, 횟수 구하기
+ Set rngTarget = Range("I2:I" & mem)  'Target ID
+ Set rngI = Range("E2:E" & lngR)  'ID
+ Set rngP = Range("G2:G" & lngR)  'Price
+ For Each rngC In rngTarget
+    cnt = Application.CountIf(rngI, rngC)
+    rngC.Offset(0, 3).Value = cnt
+    ave = Application.AverageIf(rngI, rngC, rngP)
+    rngC.Offset(0, 4).Value = ave
+ Next rngC
+ 
+End Sub
+
+Sub RFM4()
+ Dim rngTarget As Range
+ Dim rngI As Range
+ Dim mem As Long
+ Dim hist As Date
+ Dim Noda As Long
+ 
+ '총 고객 명수 구하기
+ mem = Worksheets("RFM").Range("I10000").End(xlUp).Row
+ 
+ '구매 경과 일수 계산
+ Set rngl = Range("I2:I" & mem)
+ For Each rngTarget In rngl  '각 ID에 대해
+    hist = rngTarget.Offset(0, 1).Value  '날짜
+    Noda = DateDiff("d", hist, Now)  '경과일 계산
+    rngTarget.Offset(0, 5).Value = Noda
+ Next rngTarget
+End Sub
+
+Sub RFM5()
+ Dim mem As Long
+ Dim i As Long
+
+'총 고객 명수 구하기
+ mem = Worksheets("RFM").Range("I1000000").End(xlUp).Row
+
+ 'RFM 지수 계산
+ Range("O1") = "Recency"
+ Range("P1") = "Frequency"
+ Range("Q1") = "Monetary"
+ Range("R1") = "RFM점수"
+ Range("S1") = "class"
+ 
+ For i = 2 To mem
+    Select Case Range("N" & i)  'R 최근 거래일
+        Case Is > 4500
+        Range("O" & i) = "1"
+        Case Is > 4400
+        Range("O" & i) = "2"
+        Case Is > 4300
+        Range("O" & i) = "3"
+        Case Is > 4250
+        Range("O" & i) = "4"
+        Case Else
+        Range("O" & i) = "5"
+    End Select
+    
+    Select Case Range("L" & i)  'F 구매건수
+        Case Is > 300
+        Range("P" & i) = "5"
+        Case Is > 100
+        Range("P" & i) = "4"
+        Case Is > 50
+        Range("P" & i) = "3"
+        Case Is > 10
+        Range("P" & i) = "2"
+        Case Else
+        Range("P" & i) = "1"
+    End Select
+    
+    Select Case Range("M" & i)  'M 평균 금액
+        Case Is > 50
+        Range("Q" & i) = "5"
+        Case Is > 30
+        Range("Q" & i) = "4"
+        Case Is > 20
+        Range("Q" & i) = "3"
+        Case Is > 10
+        Range("Q" & i) = "2"
+        Case Else
+        Range("Q" & i) = "1"
+    End Select
+    
+    'RFM 점수 계산
+    Range("R" & i) = 0.2 * Range("O" & i) + 0.4 * Range("P" & i) + 0.4 * Range("Q" & i)
+    
+    '점수에 따른 class 계산
+    Select Case Range("R" & i)
+        Case Is >= 5
+        Range("S" & i) = "5 class"
+        Case Is >= 4
+        Range("S" & i) = "4 class"
+        Case Is >= 3
+        Range("S" & i) = "3 class"
+        Case Is >= 2
+        Range("S" & i) = "2 class"
+        Case Else
+        Range("S" & i) = "1 class"
+    End Select
+ Next i
+ 
+ 'RFM 분석을 위해 만든 변수 모두 ID 기준으로 정렬
+ Range("I1:S" & mem).Sort key1:=Range("I1"), order1:=xlAscending, Header:=xlYes
+ 
+End Sub
+
+Sub RFM_graph()
+Dim lngR As Long
+Dim rngTarget As Range
+Dim rngC As Range
+Dim Target As Range
+Dim chrt1 As Chart
+
+    '행데이터 index 찾기
+    lngR = Worksheets("RFM").Range("S10000").End(xlUp).Row
+    
+    'RFM sheet에서 class 가져오기
+    Worksheets("RFM").Range("S1:S" & lngR).copy Worksheets("RFM그래프").Range("A1")
+    
+    
+    'class 별 count
+    Worksheets("RFM그래프").Range("C1") = "class"
+    Worksheets("RFM그래프").Range("C2") = "1 class"
+    Worksheets("RFM그래프").Range("C3") = "2 class"
+    Worksheets("RFM그래프").Range("C4") = "3 class"
+    Worksheets("RFM그래프").Range("C5") = "4 class"
+    Worksheets("RFM그래프").Range("C6") = "5 class"
+    Worksheets("RFM그래프").Range("D1") = "갯수"
+    
+    Set rngTarget = Range("C2:C6")  'Target class
+    Set rngC = Range("A2:A" & lngR)  'class
+    For Each Target In rngTarget
+        cnt = Worksheets("RFM그래프").Application.CountIf(rngC, Target)
+        Target.Offset(0, 1).Value = cnt
+    Next Target
+    
+    Set chrt1 = Worksheets("RFM그래프").Shapes.AddChart.Chart
+
+    With chrt1
+        .SetSourceData Source:=Worksheets("RFM그래프").Range("C1:D6")
+        .ChartType = xlPie
+        .HasTitle = True
+        .ChartTitle.text = "RFM 분포"
+        .ApplyDataLabels Type:=xlDataLabelsShowValue
+    End With
+    
+End Sub
