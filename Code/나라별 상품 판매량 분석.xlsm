@@ -1,0 +1,40 @@
+'나라별 상품 판매량 구하기
+Sub country()
+Dim pc As PivotCache
+Dim pt As PivotTable
+Dim ss As Worksheet, sd As Worksheet
+Dim cs As Range, cd As Range
+
+    '피벗테이블 만들기
+    Set ss = Sheets("전처리")
+    Set sd = Sheets("나라별 판매량")
+
+    Set cs = ss.Range("A1")
+    Set cd = sd.Range("A1")
+    
+    sd.Activate
+    sd.Cells.Clear
+    
+    Set pc = ThisWorkbook.PivotCaches.Create(xlDatabase, cs.CurrentRegion)
+    Set pt = pc.CreatePivotTable(cd)
+    
+    With pt
+        .AddFields "Country"
+        .AddDataField .PivotFields("Quantity"), "수량기준 합계", xlSum
+    End With
+
+End Sub
+
+Sub country_bar()
+Dim chrt1 As Chart
+    
+    Set chrt1 = Worksheets("나라별 판매량").Shapes.AddChart.Chart
+
+    With chrt1
+        .SetSourceData Source:=Worksheets("나라별 판매량").Range("A1:B39")
+        .ChartType = xlColumnClustered
+        .HasTitle = True
+        .ChartTitle.text = "나라별 판매량"
+    End With
+    
+End Sub
