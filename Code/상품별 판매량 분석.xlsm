@@ -1,0 +1,58 @@
+' 상품별 판매량 구하기
+Sub product()
+Dim lngR As Long
+Dim rngA As Range
+Dim Target As Range
+Dim rngTarget As Range
+Dim rngD As Range
+Dim rngQ As Range
+Dim cnt As Long
+
+    '행데이터 index 찾기
+    lngR = Worksheets("전처리").Range("A1000000").End(xlUp).Row
+    
+    '전처리 sheet에서 상품명과 수량 가져오기
+    Worksheets("전처리").Range("A1:B" & lngR).copy Worksheets("상품별 판매량").Range("A1")
+    
+    '헤더 만들기
+    Worksheets("상품별 판매량").Cells(1, 4) = "상품명"
+    Worksheets("상품별 판매량").Cells(1, 5) = "판매량"
+    
+    '상품명 가져오고 중복제거
+    Worksheets("상품별 판매량").Range("A2:A" & lngR).copy Worksheets("상품별 판매량").Range("D2")
+    Set rngA = Worksheets("상품별 판매량").Range("D1:D" & lngR)
+        rngA.RemoveDuplicates Columns:=1, Header:=xlYes
+        
+    '판매량 구하기
+    lngA = Worksheets("상품별 판매량").Range("D10000").End(xlUp).Row
+    Set rngTarget = Worksheets("상품별 판매량").Range("D2:D" & lngA)  '중복제거한 상품명
+    Set rngD = Worksheets("상품별 판매량").Range("A2:A" & lngR)  '상품명
+    Set rngQ = Worksheets("상품별 판매량").Range("B2:B" & lngR)  'Quantity
+    For Each Target In rngTarget
+        cnt = Worksheets("상품별 판매량").Application.SumIf(rngD, Target, rngQ)
+        Target.Offset(0, 1).Value = cnt
+    Next Target
+    
+End Sub
+
+Sub product_bar()
+Dim lngR As Long
+Dim chrt1 As Chart
+
+    '상품의 갯수
+    lngR = Worksheets("상품별 판매량").Range("D10000").End(xlUp).Row
+
+    '판매량 기준 내림차순 나열
+    Worksheets("상품별 판매량").Range("D1:E" & lngR).Sort key1:=Range("E1"), order1:=xlDescending, Header:=xlYes
+    
+    '상위 Top5 상품의 판매량 그래프
+    Set chrt1 = Worksheets("상품별 판매량").Shapes.AddChart.Chart
+
+    With chrt1
+        .SetSourceData Source:=Worksheets("상품별 판매량").Range("D1:E6")
+        .ChartType = xlColumnClustered
+        .HasTitle = True
+        .ChartTitle.Text = "상위 Top5 상품 판매량"
+    End With
+    
+End Sub
