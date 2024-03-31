@@ -1,0 +1,61 @@
+'year(): 월별 판매량 구하기
+Sub year()
+Dim i As Long
+Dim j As Long
+Dim lngR As Long
+Dim cnt As Long
+Dim sum As Long
+
+    lngR = Worksheets("전처리").Range("A1000000").End(xlUp).Row
+    
+    '월별 구매횟수 Sheet에 월 이름 생성
+    '2010년 12월
+    Worksheets("월별 판매량").Cells(1, 1) = "2010-12"
+    '2011년 1월 ~ 9월
+    For i = 1 To 9
+        Worksheets("월별 판매량").Cells(i + 1, 1) = "2011-0" & i
+    Next i
+    '2011년 10월 ~ 12월
+    For i = 10 To 12
+        Worksheets("월별 판매량").Cells(i + 1, 1) = "2011-" & i
+    Next i
+    
+    '날짜형 -> 문자열 형변환
+    For j = 2 To lngR
+       Worksheets("전처리").Cells(j, 7) = Worksheets("전처리").Application.Text(Cells(j, 3), "yyyy-mm")
+    Next j
+    
+    '2010년 12월 구매횟수 sum
+    Worksheets("월별 판매량").Cells(1, 2) = Worksheets("전처리").Application.SumIf(Range("G1:G" & lngR), "2010-12", Range("B1:B" & lngR))
+    
+    '2011년 1월 ~ 9월 각 월별 구매횟수 sum
+    For i = 1 To 9
+        Worksheets("월별 판매량").Cells(i + 1, 2) = Worksheets("전처리").Application.SumIf(Range("G1:G" & lngR), "2011-0" & i, Range("B1:B" & lngR))
+    Next i
+    
+    '2011년 10월 ~ 12월 각 월별 구매횟수 sum
+    For i = 10 To 12
+        Worksheets("월별 판매량").Cells(i + 1, 2) = Worksheets("전처리").Application.SumIf(Range("G1:G" & lngR), "2011-" & i, Range("B1:B" & lngR))
+    Next i
+    
+End Sub
+
+Sub cleaning()
+'월별 count를 위해 만들었던 변수 삭제
+    Worksheets("전처리").Range("G1").EntireColumn.Delete
+End Sub
+
+Sub month_line()
+'월별 판매량을 라인그래프로 그리기
+Dim chrt As Chart
+
+Set chrt = Worksheets("월별 판매량").Shapes.AddChart.Chart
+
+With chrt
+    .SetSourceData Source:=Worksheets("월별 판매량").Range("A1:B13")
+    .ChartType = xlLine
+    .HasTitle = True
+    .ChartTitle.Text = "월별 상품 판매량"
+End With
+
+End Sub
