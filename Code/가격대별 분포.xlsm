@@ -1,0 +1,105 @@
+'가격대별 분포 구하기
+Sub Price()
+Dim lngR As Long
+Dim lngA As Long
+Dim lngT As Long
+Dim rngTarget As Range
+Dim rngN As Range
+Dim rngP As Range
+Dim rngC As Range
+
+
+    '행데이터 index 찾기
+    lngR = Worksheets("전처리").Range("A1000000").End(xlUp).Row
+    
+    '전처리 sheet에서 상품명과 가격 가져오기
+    Worksheets("전처리").Range("A1:A" & lngR).copy Worksheets("가격대별 분포").Range("A1")
+    Worksheets("전처리").Range("D1:D" & lngR).copy Worksheets("가격대별 분포").Range("B1")
+    
+    '상품명을 기준으로 정렬
+    Worksheets("가격대별 분포").Range("A1:C" & lngR).Sort key1:=Range("A1"), order1:=xlDescending, Header:=xlYes
+
+    '헤더 만들기
+    Worksheets("가격대별 분포").Cells(1, 4) = "상품명"
+    Worksheets("가격대별 분포").Cells(1, 5) = "가격"
+    
+    '상품명 가져오고 중복제거
+    Worksheets("가격대별 분포").Range("A2:A" & lngR).copy Worksheets("가격대별 분포").Range("D2")
+    Set rngA = Worksheets("가격대별 분포").Range("D1:D" & lngR)
+        rngA.RemoveDuplicates Columns:=1, Header:=xlYes
+        
+    '상품의 갯수
+    lngT = Worksheets("가격대별 분포").Range("D10000").End(xlUp).Row
+        
+    '상품명을 기준으로 가격을 평균내기
+    Set rngTarget = Worksheets("가격대별 분포").Range("D2:D" & lngT)  'Target Product
+    Set rngN = Worksheets("가격대별 분포").Range("A2:A" & lngR)  'Product name
+    Set rngP = Worksheets("가격대별 분포").Range("B2:B" & lngR)  'Price
+    For Each rngC In rngTarget
+        ave = Worksheets("가격대별 분포").Application.AverageIf(rngN, rngC, rngP)
+        rngC.Offset(0, 1).Value = ave
+    Next rngC
+
+End Sub
+
+Sub Price_graph()
+Dim lngT As Long
+Dim i As Long
+Dim chrt1 As Chart
+Dim cnt1, cnt2, cnt3, cnt4, cnt5, cnt6, cnt7, cnt8  As Long
+
+    '상품의 갯수
+    lngT = Worksheets("가격대별 분포").Range("D10000").End(xlUp).Row
+    
+    '가격대 설정
+    Worksheets("가격대별 분포").Range("G1") = "가격대"
+    Worksheets("가격대별 분포").Range("H1") = "갯수"
+    Worksheets("가격대별 분포").Range("G2") = "1미만"
+    Worksheets("가격대별 분포").Range("G3") = "1이상 3미만"
+    Worksheets("가격대별 분포").Range("G4") = "3이상 5미만"
+    Worksheets("가격대별 분포").Range("G5") = "5이상 10미만"
+    Worksheets("가격대별 분포").Range("G6") = "10이상 30미만"
+    Worksheets("가격대별 분포").Range("G7") = "30이상 50미만"
+    Worksheets("가격대별 분포").Range("G8") = "50이상 100미만"
+    Worksheets("가격대별 분포").Range("G9") = "100이상"
+    
+    For i = 2 To lngT
+        Select Case Range("E" & i)
+        Case Is >= 100
+            cnt1 = cnt1 + 1
+        Case Is >= 50
+            cnt2 = cnt2 + 1
+        Case Is >= 30
+            cnt3 = cnt3 + 1
+        Case Is >= 10
+            cnt4 = cnt4 + 1
+        Case Is >= 5
+            cnt5 = cnt5 + 1
+        Case Is >= 3
+            cnt6 = cnt6 + 1
+        Case Is >= 1
+            cnt7 = cnt7 + 1
+        Case Else
+            cnt8 = cnt8 + 1
+        End Select
+    Next i
+    
+    Worksheets("가격대별 분포").Range("H2") = cnt8
+    Worksheets("가격대별 분포").Range("H3") = cnt7
+    Worksheets("가격대별 분포").Range("H4") = cnt6
+    Worksheets("가격대별 분포").Range("H5") = cnt5
+    Worksheets("가격대별 분포").Range("H6") = cnt4
+    Worksheets("가격대별 분포").Range("H7") = cnt3
+    Worksheets("가격대별 분포").Range("H8") = cnt2
+    Worksheets("가격대별 분포").Range("H9") = cnt1
+
+    Set chrt1 = Worksheets("가격대별 분포").Shapes.AddChart.Chart
+
+    With chrt1
+        .SetSourceData Source:=Worksheets("가격대별 분포").Range("G1:H9")
+        .ChartType = xlBarClustered
+        .HasTitle = True
+        .ChartTitle.Text = "가격대별 분포"
+    End With
+    
+End Sub
